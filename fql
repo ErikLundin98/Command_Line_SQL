@@ -1,0 +1,63 @@
+#!/usr/bin/python
+
+import pandas as pd
+import pandasql as ps
+import re
+import sys
+import os
+
+extensions = ["csv", "tsv", "dat", "log"]
+regex_filter = '|'.join(["(.*\."+ extension +".*)" for extension in extensions])
+
+def parse_file_names(query:str):
+    """Returns file names found in query"""
+    # Needs to support SELECT * FROM t1, t2, as well as joins
+
+    words = query.split(' ')
+    r = re.compile(regex_filter) # matches when .csv is a part of file
+    matches = list(filter(r.match, words))
+    matches = [s.replace(',', '') for s in matches]
+    if not len(matches): exit("Error: No .csv files in query!")
+    return matches
+
+def load_dataframes(file_names:list):
+    """Returns a dict of dataframe names and dataframes"""
+
+    df_dict = {}
+    for name in file_names:
+        table_name = os.path.split(name)[-1].split('.')[0] # remove extension in table name, as well as path specifier
+        try:
+            df_dict[table_name] = pd.read_csv(os.path.join(os.getcwd(), *os.path.split(name)))
+        except FileNotFoundError as e:
+            exit(f"Error: File {name} not found!")
+
+    return df_dict
+
+def rephrase_query(query:str, file_names:list, table_names:list):
+    """Remove file extensions from query"""
+
+    for file_name, table_name in zip(file_names, table_names):
+        query = query.replace(file_name, table_name)
+    
+    return query
+
+def main(query:str):
+    """Executes the query and returns a string"""
+
+    file_names = parse_file_names(query)
+    df_dict = load_dataframes(file_names)
+    query = rephrase_query(query, file_names, list(df_dict.keys()))
+    sql = ps.PandaSQL()
+    try:
+        res = sql(query, env=df_dict)
+        return res
+    except ps.PandaSQLException as e:
+        raise SystemExit(f"Error: {e}")
+
+if __name__ == '__main__':
+    if len(sys.argv) > 1:
+        query = ' '.join(sys.argv[1:])
+    else:
+        exit("Error: No query supplied!")
+
+    print(main(query))
