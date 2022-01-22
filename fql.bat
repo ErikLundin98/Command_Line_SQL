@@ -1,3 +1,3 @@
 @ECHO OFF
 
-python fql %*
+python %~dp0/fql %*

@@ -26,7 +26,7 @@ Call the script ```fql.py``` followed by the query. Example:
 Add the path of the repository to your PATH variable. Then, you can run ```fql.bat``` from anywhere in the following way:
 
 ```
-./fql <QUERY>
+fql <QUERY>
 ```
 
 ## Linux
@@ -49,3 +49,4 @@ Then, you can run the script using
 # Supported file formats
 
 extensions = ["csv", "tsv", "dat", "log"]
+
